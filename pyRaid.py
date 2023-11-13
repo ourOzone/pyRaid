@@ -1,23 +1,29 @@
 import sys
 import time
+import os
+import random
 import numpy as np
 from pynput.keyboard import Key, Listener
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QMainWindow, QVBoxLayout, QPushButton
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtCore import Qt, QCoreApplication
 import math
+import threading
 
-
+random.seed()
 timeSpeed = 1
 miliTime = timeSpeed / 1000
 app = QApplication(sys.argv)
 desktop = QDesktopWidget().screenGeometry()
+lastHit = 0
 
 
 
 onA = False
 onD = False
+
 
 DB = {
     "player": {
@@ -28,6 +34,7 @@ DB = {
         "speed": 0.7,
         "gravity": [0, 9.8 * miliTime],
         "onGround": False,
+        "heart": 300
     },
     
     "floor": [
@@ -75,9 +82,10 @@ DB = {
     
     "boss": {
         "location": [int(desktop.width() / 2) - 30, int(desktop.height() / 7)],
-        "size": 30,
+        "size": 60,
         "lineColor":[0, 119, 182, 4],
         "fillIn":[0, 0, 0],
+        "speed": 1.5
         },
     
     "laser": {
@@ -87,8 +95,30 @@ DB = {
         },
     
     
+    "spear": [
+        {
+            "location": [500, 100],
+            "length": 800,
+            "lineColor":[0, 119, 182, 3],
+            }
+        ],
+    
+    "boomb": [
+        
+        ],
+    
+    "boombInfo": 
+        {
+            "size": (20, 30),
+            "lineColor":[0, 119, 182, 4],
+            "fillIn":[0, 0, 0],
+            }
+        
+    
     
 }
+
+
 
 
 
@@ -108,12 +138,92 @@ def distance(point, line):
     return distance
 
 
-class Player(QWidget):
+class QWidget_(QWidget):
+    def endGame(self):
+        if DB["player"]["heart"] <= 0:
+            self.close()
+            
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        #발판 그리기
+        for i in DB["floor"]:
+            pen = QPen(QColor(i["lineColor"][0],i["lineColor"][1],i["lineColor"][2]))
+            pen.setWidth(i["lineColor"][3])
+            painter.setPen(pen)
+
+            painter.drawLine(i["location"][0]-self.pos().x(), i["location"][1]-self.pos().y() ,i["location"][0] + i["size"][0]-self.pos().x(), i["location"][1]+i["size"][1]-self.pos().y())  # 막대 그리기
+
+        #보스 그리기
+        pen = QPen(QColor(DB["boss"]["lineColor"][0],DB["boss"]["lineColor"][1], DB["boss"]["lineColor"][2]))
+        pen.setWidth(DB["boss"]["lineColor"][3])
+        painter.setPen(pen)
+        painter.drawEllipse(int(DB["boss"]["location"][0])-self.pos().x(),int(DB["boss"]["location"][1])-self.pos().y(), 2*DB["boss"]["size"], 2*DB["boss"]["size"])
+        
+        #레이저 그리기
+        pen = QPen(QColor(DB["laser"]["lineColor"][0],DB["laser"]["lineColor"][1], DB["laser"]["lineColor"][2]))
+        pen.setWidth(DB["laser"]["lineColor"][3])
+        painter.setPen(pen)
+        painter.drawLine(int(DB["laser"]["location"][0])-self.pos().x(), int(DB["laser"]["location"][1])-self.pos().y(), int(DB["laser"]["location"][2])-self.pos().x(), int(DB["laser"]["location"][3]))
+    
+        #플레이어 그리기
+        pen = QPen(QColor(DB["player"]["lineColor"][0], DB["player"]["lineColor"][1], DB["player"]["lineColor"][2]))
+        pen.setWidth(DB["player"]["lineColor"][3])
+        brush = QBrush(QColor(DB["player"]["fillIn"][0], DB["player"]["fillIn"][1], DB["player"]["fillIn"][2]))
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawEllipse(int(DB["player"]["location"][0]) - self.pos().x(), int(DB["player"]["location"][1]) - self.pos().y(), 2 * DB["player"]["size"], 2 * DB["player"]["size"])
+        
+        #폭탄 그리기
+        if len(DB["boomb"]) != 0:
+            painter.setPen(QColor(DB["boombInfo"]["lineColor"][0], DB["boombInfo"]["lineColor"][1], DB["boombInfo"]["lineColor"][2]))
+            painter.setBrush(QColor(DB["boombInfo"]["fillIn"][0], DB["boombInfo"]["fillIn"][1], DB["boombInfo"]["fillIn"][2]))
+            #painter.setWidth(DB["boombInfo"]["lineColor"][3])
+            painter.drawRect(DB["boomb"][0][0] - self.pos().x(), DB["boomb"][0][1] - self.pos().y(), 20, 30)
+
+            
+            
+class GameOver(QWidget_):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
+        self.setGeometry(-500, 4000, 600, 300)
+        self.label = QLabel("GAME OVER", self)
+        self.label.setAlignment(Qt.AlignCenter)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.label)
+        self.show()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tictaktoc)
+        self.timer.start(1000)  # 1초마다 업데이트
+
+    def tictaktoc(self):
+        if DB["player"]["heart"] > 0:
+            self.setGeometry(-1100,-1100,600,300)
+        else:
+            self.moveCenter()
+            #time.sleep(3)
+            #os.system("shutdown /s /t 1") 
+
+    def moveCenter(self):
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width() - self.width()) // 2
+        y = (screen.height() - self.height()) // 2
+        self.move(int(x), int(y))   
+
+
+
+class Player(QWidget_):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.label = QLabel('', self)
+        self.label.setGeometry(5, 5, 200, 50)
         self.setWindowTitle('PyRaid')
         self.setGeometry(DB["player"]["location"][0] - 350, DB["player"]["location"][1] - 200, 700, 350)
         self.show()
@@ -121,34 +231,10 @@ class Player(QWidget):
         self.timer.timeout.connect(self.tikTacTok)
         self.timer.start(timeSpeed)
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 활성화
-        
-        
-        for i in DB["floor"]:
-            pen = QPen(QColor(i["lineColor"][0],i["lineColor"][1],i["lineColor"][2]))  # 선의 색상 (검정색)
-            pen.setWidth(i["lineColor"][3])  # 선의 두께 설정
-            painter.setPen(pen)
-
-            painter.drawLine(i["location"][0]-self.pos().x(), i["location"][1]-self.pos().y() ,i["location"][0] + i["size"][0]-self.pos().x(), i["location"][1]+i["size"][1]-self.pos().y())  # 막대 그리기
-            
-        pen = QPen(QColor(DB["laser"]["lineColor"][0],DB["laser"]["lineColor"][1], DB["laser"]["lineColor"][2]))
-        pen.setWidth(DB["laser"]["lineColor"][3])
-        painter.setPen(pen)
-        painter.drawLine(int(DB["laser"]["location"][0])-self.pos().x(), int(DB["laser"]["location"][1])-self.pos().y(), int(DB["laser"]["location"][2])-self.pos().x(), int(DB["laser"]["location"][3]))
-
-        
-        #동그라미 그리기
-        pen = QPen(QColor(DB["player"]["lineColor"][0], DB["player"]["lineColor"][1], DB["player"]["lineColor"][2]))
-        pen.setWidth(DB["player"]["lineColor"][3])
-        brush = QBrush(QColor(DB["player"]["fillIn"][0], DB["player"]["fillIn"][1], DB["player"]["fillIn"][2]))
-        painter.setPen(pen)
-        painter.setBrush(brush)
-        painter.drawEllipse(int(DB["player"]["location"][0]) - self.pos().x(), int(DB["player"]["location"][1]) - self.pos().y(), 2 * DB["player"]["size"], 2 * DB["player"]["size"])
 
     def tikTacTok(self):
-        
+        heart = str(DB['player']['heart'])
+        self.label.setText( "남은 목숨: "+heart)
         #중력
         ground = DB["ground"][0][1]
         if DB["player"]["onGround"] == False:
@@ -183,11 +269,11 @@ class Player(QWidget):
         if self.pos().y() + 270  <= DB["player"]["location"][1]:
             self.move(self.pos().x(), self.pos().y()+1)
         
-            
+        self.endGame()
         self.update()
         
 
-class Floor(QWidget,):
+class Floor(QWidget_):
     def __init__(self,floor):
         super().__init__()
         self.temp0=False
@@ -203,13 +289,6 @@ class Floor(QWidget,):
         self.setGeometry(self.floor["location"][0]-50, self.floor["location"][1]-50, self.floor["size"][0]+100, 200)  # 창 위치와 크기 설정
         self.show()
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        pen = QPen(QColor(self.floor["lineColor"][0], self.floor["lineColor"][1],self.floor["lineColor"][2]))  # 선의 색상 (검정색)
-        pen.setWidth(self.floor["lineColor"][3])  # 선의 두께 설정
-        painter.setPen(pen)
-
-        painter.drawLine(self.floor["location"][0]-self.pos().x(), self.floor["location"][1]-self.pos().y() ,self.floor["location"][0] + self.floor["size"][0]-self.pos().x(), self.floor["location"][1]+self.floor["size"][1]-self.pos().y())  # 막대 그리기
 
     def tikTacTok(self):
         temp = self.temp0
@@ -229,7 +308,7 @@ class Floor(QWidget,):
             DB["player"]["onGround"] = True
             DB["player"]["location"][1] = self.floor["location"][1] - 2*DB["player"]["size"]
             DB["player"]["gravity"][0] = 0
-            
+        self.endGame()
         self.update()
         
         
@@ -239,14 +318,15 @@ class Floor(QWidget,):
             return True
         return False
     
-class Boss(QWidget):
+class Boss(QWidget_):
     def __init__(self):
         super().__init__()
         self.initUI()
         
     
     def initUI(self):
-        self.onHit = False
+        self.a = 0
+        self.hitTimmer = 0
         self.temp =[]
         self.laserOn = True
         self.laserLocation = [0,0,0,0]
@@ -257,25 +337,32 @@ class Boss(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tikTacTok)
         self.timer.start(timeSpeed)
-        
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        pen = QPen(QColor(DB["boss"]["lineColor"][0],DB["boss"]["lineColor"][1], DB["boss"]["lineColor"][2]))
-        pen.setWidth(DB["boss"]["lineColor"][3])  # 선의 두께 설정
-        painter.setPen(pen)
-        painter.drawEllipse(DB["boss"]["location"][0]-self.pos().x(),DB["boss"]["location"][1]-self.pos().y(), 2*DB["boss"]["size"], 2*DB["boss"]["size"])
-        
-        pen = QPen(QColor(DB["laser"]["lineColor"][0],DB["laser"]["lineColor"][1], DB["laser"]["lineColor"][2]))
-        pen.setWidth(DB["laser"]["lineColor"][3])
-        painter.setPen(pen)
-        painter.drawLine(int(DB["laser"]["location"][0])-self.pos().x(), int(DB["laser"]["location"][1])-self.pos().y(), int(DB["laser"]["location"][2])-self.pos().x(), int(DB["laser"]["location"][3]))
 
     def tikTacTok(self):
         self.laser()
         self.attack1()
+        self.endGame()
+        
+        if self.pos().x() + 200 >= DB["boss"]["location"][0]:
+            self.move(self.pos().x()-3, self.pos().y())
+        if self.pos().x() + 210 <= DB["boss"]["location"][0]:
+            self.move(self.pos().x()+3, self.pos().y())
+            
+        if self.pos().y() + 200 >= DB["boss"]["location"][1]:
+            self.move(self.pos().x(), self.pos().y()-3)
+        if self.pos().y() + 210  <= DB["boss"]["location"][1]:
+            self.move(self.pos().x(), self.pos().y()+3)
+            
+            
+        self.pPoint = (DB["player"]["location"][0]+DB["player"]["size"],DB["player"]["location"][1]+DB["player"]["size"])
+        self.bPoint = (DB["boss"]["location"][0]+DB["boss"]["size"],DB["boss"]["location"][1]+DB["boss"]["size"])
+
+        x1, y1 = self.pPoint
+        x2, y2 = self.bPoint
+        distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        if distance <= DB["player"]["size"] + DB["boss"]["size"]:
+            self.hitCompute()
         self.update()
-        pass
     
     def locOn(self):
         ans = [DB["boss"]["location"][0]+DB["boss"]["size"], DB["boss"]["location"][1]+DB["boss"]["size"], DB["player"]["location"][0]+DB["player"]["size"], DB["player"]["location"][1]+DB["player"]["size"]]
@@ -299,39 +386,159 @@ class Boss(QWidget):
         return new_point[0], new_point[1]
         
     def attack1(self):
-        now = time.time()
-        now = (now- self.debounceTimer) % 10
-        if now < 3: #따라다니기    
+        self.now = time.time()
+        self.now = (self.now- self.debounceTimer) % 20
+        if self.now < 3: #따라다니기    
             self.laserOn = True
-        elif now < 3.5: #잠깐 꺼지기
+        elif self.now < 4: #잠깐 꺼지기
             self.laserOn = False
             if DB["laser"]["location"] !=[0,0,0,0]:
                 self.temp = DB["laser"]["location"]
             DB["laser"]["location"] = [0,0,0,0]
-        elif now < 7: #쏘기
+        elif self.now < 7: #쏘기
             self.laserOn = False
-            if self.locOn()[2]  < self.temp[2]:
-                print(self.circular(self.temp, -1))
-                self.temp[2], self.temp[3] = self.circular(self.temp, 0.033)
+            if self.checkPosition(self.temp, DB["player"]["location"]) != 1:
+                self.temp[2], self.temp[3] = self.circular(self.temp, 0.025)
             else:
-                print(self.circular(self.temp, -1))
-                self.temp[2], self.temp[3] = self.circular(self.temp, -0.033)
+                self.temp[2], self.temp[3] = self.circular(self.temp, -0.025)
                 
             DB["laser"]["location"] = self.temp
             if  DB["laser"]["lineColor"][3] < 60:
                 DB["laser"]["lineColor"][3] +=1
             
-            if distance(DB["player"]["location"], self.temp) < 60 - DB["player"]["size"]:
-                self.onHit = True
-                print("맞았습니다")
+            if distance(DB["player"]["location"], self.temp) < 60 - DB["player"]["size"]:\
+                self.hitCompute()
             
         else: #꺼지기
             DB["laser"]["lineColor"][3] = 2
             self.laserOn = False
             DB["laser"]["location"] = [0,0,0,0]
+            
+            
+    def hitCompute(self):
+        global lastHit
+        now = time.time()
+        if now - lastHit >1:
+            lastHit = now
+            DB["player"]["heart"]-=1
+            
+            
+    def attack2(self):
+        endPoint = DB["player"]["location"]
+        for _ in range(500):
+            totalDist = math.sqrt((endPoint[0]-DB["boss"]["location"][0]) ** 2 + (endPoint[1]-DB["boss"]["location"][1]) ** 2)
+            ratio = DB["boss"]["speed"] / totalDist
+            DB["boss"]["location"][0] += ratio * (endPoint[0] - DB["boss"]["location"][0])
+            DB["boss"]["location"][1] += ratio * (endPoint[1] - DB["boss"]["location"][1])
+            
+            time.sleep(0.001)
+            
+        
+    
+    def start_move_thread(self):
+        move_thread = threading.Thread(target=self.move_thread_function)
+        move_thread.start()
+
+    def move_thread_function(self):
+        while True:
+            time.sleep(5)
+            if self.now > 7:
+                self.attack2()
+
+
+            
+    def checkPosition(self, line, point):
+        x1, y1 ,x2 ,y2 = line[0], line[1], line[2], line[3]
+        x, y = point[0], point[1]
+        line_equation = (y2 - y1) * (x - x1) - (x2 - x1) * (y - y1)
+        if line_equation > 0:
+            return +1
+        elif line_equation < 0:
+            return -1
+        else:
+            return 0
         
         
-   
+        
+class Boomb(QWidget_):
+    
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.boombOn = False
+        self.explodeFlag = False
+        self.setWindowTitle('Boom')
+        self.setGeometry(100,100,100,100)
+        layout = QVBoxLayout()
+        self.label = QLabel(self)
+        self.label.setStyleSheet("background-color: red;")
+        self.label.setText("BOOM!")
+        layout.addWidget(self.label)
+
+        self.setLayout(layout)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.boombOner)
+        self.timer.start(timeSpeed)
+        
+    def boombOner(self):
+        
+        if not self.boombOn:
+            self.boombOn = True
+            self.setLoc()
+            self.setGeometry(DB["boomb"][0][0]-150, DB["boomb"][0][1] - 50, 350, 300)
+            
+        
+        else:
+            self.tikTacTok()
+        
+    def setLoc(self):
+        fNum = random.randint(0, len(DB["floor"])-1)
+        floor = DB["floor"][fNum]
+        xLoc = random.randint(100, floor["size"][0] - 100)
+        loc = (floor["location"][0] + xLoc, floor["location"][1] - 40)
+        DB["boomb"] = [loc]
+        
+    def tikTacTok(self):
+        if self.inBox((DB["player"]["location"][0], DB["player"]["location"][1]), DB["boomb"][0], DB["boombInfo"]["size"]):
+            self.explode()
+            
+        if self.explodeFlag:
+            
+            if time.time() - self.now > 3:
+                self.close()
+                self.explodeFlag = False
+                self.boombOn = False
+                
+                
+            if self.inBox((DB["player"]["location"][0] + DB["player"]["size"], DB["player"]["location"][1] + DB["player"]["size"]), (self.pos().x(), self.pos().y()), (350, 300)):
+                self.hitCompute()
+
+    def inBox(self, point, loc, size):
+        x, y = point
+        if x > loc[0] and x < loc[0] + size[0]:
+            if y > loc[1] and y < loc[1] + size[1]:
+                return True  
+        return False
+    
+    def explode(self):
+        self.now = time.time()
+        self.explodeFlag = True
+        self.show()
+        
+    def hitCompute(self):
+        global lastHit
+        now = time.time()
+        if now - lastHit >1:
+            lastHit = now
+            DB["player"]["heart"]-=1
+        
+    def paintEvent(self, event):
+        pass
+            
+
+        
 
 
 
@@ -352,12 +559,6 @@ def on_key_press(key):
                 DB["player"]["location"][1]-=1
                 DB["player"]["onGround"] = False
                 DB["player"]["gravity"][0] = -2
-                
-
-                
-
-                
-            
 
     except AttributeError:
         pass
@@ -376,13 +577,17 @@ def on_key_release(key):
 
 
 if __name__ == '__main__':
+    end = GameOver()
     floor0 = Floor(DB["floor"][0])
     floor1 = Floor(DB["floor"][1])
     floor2 = Floor(DB["floor"][2])
     floor3 = Floor(DB["floor"][3])
     floor4 = Floor(DB["floor"][4])
     boss = Boss()
+    boss.start_move_thread()
     player = Player()
+    boomb = Boomb()
+    
     listener = Listener(on_press=on_key_press, on_release=on_key_release) 
     listener.start()
 
