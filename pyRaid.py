@@ -20,7 +20,6 @@ desktop = QDesktopWidget().screenGeometry()
 lastHit = 0
 
 
-
 onA = False
 onD = False
 
@@ -29,47 +28,47 @@ DB = {
     "player": {
         "location": [int(desktop.width() / 2) - 10, int(desktop.height() / 1.3)],
         "size": 10,
-        "lineColor": [0, 119, 182, 4],
+        "lineColor": [114 ,9, 183, 4],
         "fillIn": [0, 0, 0],
         "speed": 0.7,
         "gravity": [0, 9.8 * miliTime],
         "onGround": False,
-        "heart": 300
+        "heart": 3
     },
     
     "floor": [
         {
             "location": [150,1150],
             "size": [700,0],
-            "lineColor": [0, 119, 182, 10],
+            "lineColor": [114 ,9, 183, 10],
             "fillIn": [],
         },
         
         {
             "location": [1750,1150],
             "size": [700,0],
-            "lineColor": [0, 119, 182, 10],
+            "lineColor": [114 ,9, 183, 10],
             "fillIn": [],
         },
         
         {
             "location": [950,950],
             "size": [700,0],
-            "lineColor": [0, 119, 182, 10],
+            "lineColor": [114 ,9, 183, 10],
             "fillIn": [],
         },
         
         {
             "location": [150,750],
             "size": [700,0],
-            "lineColor": [0, 119, 182, 10],
+            "lineColor": [114 ,9, 183, 10],
             "fillIn": [],
         },
         
         {
             "location": [1750,750],
             "size": [700,0],
-            "lineColor": [0, 119, 182, 10],
+            "lineColor": [114 ,9, 183, 10],
             "fillIn": [],
         },
         
@@ -83,14 +82,14 @@ DB = {
     "boss": {
         "location": [int(desktop.width() / 2) - 30, int(desktop.height() / 7)],
         "size": 60,
-        "lineColor":[0, 119, 182, 4],
+        "lineColor":[114 ,9, 183, 4],
         "fillIn":[0, 0, 0],
         "speed": 1.5
         },
     
     "laser": {
         "location":[0,0,0,0],
-        "lineColor":[0, 119, 182, 2],
+        "lineColor":[114 ,9, 183, 2],
         "speed": 300,
         },
     
@@ -110,14 +109,53 @@ DB = {
     "boombInfo": 
         {
             "size": (20, 30),
-            "lineColor":[0, 119, 182, 4],
+            "lineColor":[114 ,9, 183, 0],
             "fillIn":[0, 0, 0],
-            }
+            },
         
-    
-    
+    "bullet":
+        [],
+        
 }
 
+    
+class Bullet:
+    def __init__(self):
+        pass
+    
+    def add_bullet(self, address):
+        speed = 4
+        DB["bullet"] = []
+        
+        bullet_obj = {
+            "size": [10, 10],
+            "lineColor": [114 ,9, 183, 4],
+            "location": address,
+            }
+        temp = speed * math.cos(math.pi / 4)
+        speeds = [(speed, 0), (-speed, 0), (0, speed), (0, -speed), (temp, temp), (temp, -temp), (-temp, temp), (-temp, -temp)]
+        
+        
+        for speed in speeds:
+            new_bullet_obj = bullet_obj.copy()
+            new_bullet_obj["speed"] = speed
+            DB["bullet"].append(new_bullet_obj)
+        
+    def move_bullet(self):
+        for i in DB["bullet"]:
+            i["location"] = [x + y for x, y in zip(i["location"], i["speed"])]
+    
+    def is_hit(self):
+        for i in DB["bullet"]:
+            dx = i["location"][0] - DB["player"]["location"][0]
+            dy = i["location"][1] - DB["player"]["location"][1]
+            bullet_distance = math.sqrt(dx **2 + dy **2)
+            if bullet_distance <= DB["player"]["size"] + DB["bullet"]["size"][0]:
+                return True
+            
+            return False
+            
+        
 
 
 
@@ -146,6 +184,7 @@ class QWidget_(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        painter.fillRect(self.rect(), QBrush(QColor(0, 0, 0)))
         
         #발판 그리기
         for i in DB["floor"]:
@@ -181,6 +220,15 @@ class QWidget_(QWidget):
             painter.setBrush(QColor(DB["boombInfo"]["fillIn"][0], DB["boombInfo"]["fillIn"][1], DB["boombInfo"]["fillIn"][2]))
             #painter.setWidth(DB["boombInfo"]["lineColor"][3])
             painter.drawRect(DB["boomb"][0][0] - self.pos().x(), DB["boomb"][0][1] - self.pos().y(), 20, 30)
+        
+        #총알 그리기
+        for i in DB["bullet"]:
+            pen = QPen(QColor(i["lineColor"][0],i["lineColor"][1],i["lineColor"][2]))
+            pen.setWidth(i["lineColor"][3])
+            painter.setPen(pen)
+
+            painter.drawEllipse(int(i["location"][0]-self.pos().x()), int(i["location"][1]-self.pos().y()) , i["size"][0], i["size"][1])
+
 
             
             
@@ -192,9 +240,35 @@ class GameOver(QWidget_):
     def initUI(self):
         self.setGeometry(-500, 4000, 600, 300)
         self.label = QLabel("GAME OVER", self)
-        self.label.setAlignment(Qt.AlignCenter)
+        
+        rage_against_the_machine = [
+            "Killing In The Name",
+            "Sleep Now In The Fire",
+            "Take The Power Back",
+            "Wake Up",
+            "Bulls On Parade",
+            "Testify",
+            "Bombtrack",
+            "Bullet In Your Head",
+            "Know Your Enemy",
+            "Freedom",
+            "Guerrilla Radio"
+        ]
+
+        text = random.choice(rage_against_the_machine)
+        
+        self.label.setStyleSheet("color: rgb(114, 9, 183);")
+        self.extra_label = QLabel(text, self)
+        self.extra_label.setStyleSheet("color: rgb(114, 9, 183);")
+
         layout = QVBoxLayout(self)
         layout.addWidget(self.label)
+        layout.addWidget(self.extra_label)
+        self.setLayout(layout)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.extra_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.label)
+        
         self.show()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tictaktoc)
@@ -230,6 +304,7 @@ class Player(QWidget_):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tikTacTok)
         self.timer.start(timeSpeed)
+        self.label.setStyleSheet("color: rgb(114, 9, 183);")
 
 
     def tikTacTok(self):
@@ -291,6 +366,7 @@ class Floor(QWidget_):
 
 
     def tikTacTok(self):
+        
         temp = self.temp0
         if DB["player"]["location"][1] >self.floor["location"][1] - 2*DB["player"]["size"]:
             self.temp0 = False
@@ -321,7 +397,8 @@ class Floor(QWidget_):
 class Boss(QWidget_):
     def __init__(self):
         super().__init__()
-        self.initUI()
+        self.initUI()    
+        self.bul = Bullet()
         
     
     def initUI(self):
@@ -339,6 +416,7 @@ class Boss(QWidget_):
         self.timer.start(timeSpeed)
 
     def tikTacTok(self):
+        self.bul.move_bullet()
         self.laser()
         self.attack1()
         self.endGame()
@@ -443,8 +521,11 @@ class Boss(QWidget_):
         while True:
             time.sleep(5)
             if self.now > 7:
-                self.attack2()
-
+                
+                if random.choice([True, False]):
+                    self.attack2()
+                else:
+                    self.bul.add_bullet([x + DB["boss"]["size"] for x in DB["boss"]["location"]])
 
             
     def checkPosition(self, line, point):
