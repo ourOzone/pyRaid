@@ -1,14 +1,11 @@
 import sys
 import time
-import os
 import random
 import numpy as np
 from pynput.keyboard import Key, Listener
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QMainWindow, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtCore import Qt, QCoreApplication
 import math
 import threading
 
@@ -37,39 +34,65 @@ DB = {
     },
     
     "floor": [
+        
+        {
+            "location": [1050, 1300],
+            "size": [700,0],
+            "lineColor": [114 ,9, 183, 10],
+        },
+        
         {
             "location": [150,1150],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
-            "fillIn": [],
         },
         
         {
-            "location": [1750,1150],
+            "location": [1600,1150],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
-            "fillIn": [],
         },
         
         {
-            "location": [950,950],
+            "location": [400,1050],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
-            "fillIn": [],
+        },
+        
+        {
+            "location": [1050,950],
+            "size": [700,0],
+            "lineColor": [114 ,9, 183, 10],
         },
         
         {
             "location": [150,750],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
-            "fillIn": [],
+        },
+        
+        {
+            "location": [450,650],
+            "size": [700,0],
+            "lineColor": [114 ,9, 183, 10],
         },
         
         {
             "location": [1750,750],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
-            "fillIn": [],
+        },
+        
+        {
+            "location": [1550,600],
+            "size": [700,0],
+            "lineColor": [114 ,9, 183, 10],
+        },
+        
+        {
+            "location": [1800,450],
+            "size": [700,0],
+            "lineColor": [114 ,9, 183, 10],
         },
         
         ],
@@ -124,7 +147,7 @@ class Bullet:
         pass
     
     def add_bullet(self, address):
-        speed = 4
+        speed = 2
         DB["bullet"] = []
         
         bullet_obj = {
@@ -146,14 +169,17 @@ class Bullet:
             i["location"] = [x + y for x, y in zip(i["location"], i["speed"])]
     
     def is_hit(self):
+        tmp = []
         for i in DB["bullet"]:
             dx = i["location"][0] - DB["player"]["location"][0]
             dy = i["location"][1] - DB["player"]["location"][1]
-            bullet_distance = math.sqrt(dx **2 + dy **2)
-            if bullet_distance <= DB["player"]["size"] + DB["bullet"]["size"][0]:
+            bullet_distance = math.sqrt(dx ** 2 + dy ** 2)
+            tmp.append(bullet_distance)
+            if bullet_distance <= DB["player"]["size"] + i["size"][0]:
                 return True
-            
-            return False
+        
+        return False
+
             
         
 
@@ -366,7 +392,6 @@ class Floor(QWidget_):
 
 
     def tikTacTok(self):
-        
         temp = self.temp0
         if DB["player"]["location"][1] >self.floor["location"][1] - 2*DB["player"]["size"]:
             self.temp0 = False
@@ -440,7 +465,13 @@ class Boss(QWidget_):
         distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
         if distance <= DB["player"]["size"] + DB["boss"]["size"]:
             self.hitCompute()
+            
+        if self.bul.is_hit():
+            self.hitCompute()
+            
+            
         self.update()
+        
     
     def locOn(self):
         ans = [DB["boss"]["location"][0]+DB["boss"]["size"], DB["boss"]["location"][1]+DB["boss"]["size"], DB["player"]["location"][0]+DB["player"]["size"], DB["player"]["location"][1]+DB["player"]["size"]]
@@ -484,7 +515,7 @@ class Boss(QWidget_):
             if  DB["laser"]["lineColor"][3] < 60:
                 DB["laser"]["lineColor"][3] +=1
             
-            if distance(DB["player"]["location"], self.temp) < 60 - DB["player"]["size"]:\
+            if distance(DB["player"]["location"], self.temp) < 60 - DB["player"]["size"]:
                 self.hitCompute()
             
         else: #꺼지기
@@ -659,11 +690,7 @@ def on_key_release(key):
 
 if __name__ == '__main__':
     end = GameOver()
-    floor0 = Floor(DB["floor"][0])
-    floor1 = Floor(DB["floor"][1])
-    floor2 = Floor(DB["floor"][2])
-    floor3 = Floor(DB["floor"][3])
-    floor4 = Floor(DB["floor"][4])
+    floors = [Floor(floor_data) for floor_data in DB["floor"]]
     boss = Boss()
     boss.start_move_thread()
     player = Player()
