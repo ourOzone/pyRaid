@@ -22,6 +22,10 @@ onD = False
 
 
 DB = {
+    "coperation_hit": 0,
+    
+    "line_color": [114 ,9, 183],
+    
     "player": {
         "location": [int(desktop.width() / 2) - 10, int(desktop.height() / 1.3)],
         "size": 10,
@@ -66,7 +70,7 @@ DB = {
         },
         
         {
-            "location": [150,750],
+            "location": [300,750],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
         },
@@ -90,7 +94,7 @@ DB = {
         },
         
         {
-            "location": [1800,450],
+            "location": [1550,600],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
         },
@@ -107,7 +111,7 @@ DB = {
         "size": 60,
         "lineColor":[114 ,9, 183, 4],
         "fillIn":[0, 0, 0],
-        "speed": 1.5
+        "speed": 1.5,
         },
     
     "laser": {
@@ -156,8 +160,11 @@ class Bullet:
             "location": address,
             }
         temp = speed * math.cos(math.pi / 4)
+        temp8_1 = speed * math.cos(math.pi / 8)
+        temp8_2 = speed * math.sin(math.pi / 8)
+        temp8 = [(-temp8_1, -temp8_2), (-temp8_1, temp8_2), (temp8_1, -temp8_2), (temp8_1, temp8_2), (temp8_2, temp8_1), (-temp8_2, temp8_1), (temp8_2, -temp8_1), (-temp8_2, -temp8_1),]
         speeds = [(speed, 0), (-speed, 0), (0, speed), (0, -speed), (temp, temp), (temp, -temp), (-temp, temp), (-temp, -temp)]
-        
+        speeds += temp8
         
         for speed in speeds:
             new_bullet_obj = bullet_obj.copy()
@@ -180,9 +187,6 @@ class Bullet:
         
         return False
 
-            
-        
-
 
 
 
@@ -204,7 +208,7 @@ def distance(point, line):
 
 class QWidget_(QWidget):
     def endGame(self):
-        if DB["player"]["heart"] <= 0:
+        if DB["player"]["heart"] <= 0 or DB["coperation_hit"] >= 5:
             self.close()
             
     def paintEvent(self, event):
@@ -212,28 +216,26 @@ class QWidget_(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         painter.fillRect(self.rect(), QBrush(QColor(0, 0, 0)))
         
+        pen = QPen(QColor(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+        
         #발판 그리기
         for i in DB["floor"]:
-            pen = QPen(QColor(i["lineColor"][0],i["lineColor"][1],i["lineColor"][2]))
             pen.setWidth(i["lineColor"][3])
             painter.setPen(pen)
 
             painter.drawLine(i["location"][0]-self.pos().x(), i["location"][1]-self.pos().y() ,i["location"][0] + i["size"][0]-self.pos().x(), i["location"][1]+i["size"][1]-self.pos().y())  # 막대 그리기
 
         #보스 그리기
-        pen = QPen(QColor(DB["boss"]["lineColor"][0],DB["boss"]["lineColor"][1], DB["boss"]["lineColor"][2]))
         pen.setWidth(DB["boss"]["lineColor"][3])
         painter.setPen(pen)
         painter.drawEllipse(int(DB["boss"]["location"][0])-self.pos().x(),int(DB["boss"]["location"][1])-self.pos().y(), 2*DB["boss"]["size"], 2*DB["boss"]["size"])
         
-        #레이저 그리기
-        pen = QPen(QColor(DB["laser"]["lineColor"][0],DB["laser"]["lineColor"][1], DB["laser"]["lineColor"][2]))
+        #레이저 그리기        
         pen.setWidth(DB["laser"]["lineColor"][3])
         painter.setPen(pen)
         painter.drawLine(int(DB["laser"]["location"][0])-self.pos().x(), int(DB["laser"]["location"][1])-self.pos().y(), int(DB["laser"]["location"][2])-self.pos().x(), int(DB["laser"]["location"][3]))
     
         #플레이어 그리기
-        pen = QPen(QColor(DB["player"]["lineColor"][0], DB["player"]["lineColor"][1], DB["player"]["lineColor"][2]))
         pen.setWidth(DB["player"]["lineColor"][3])
         brush = QBrush(QColor(DB["player"]["fillIn"][0], DB["player"]["fillIn"][1], DB["player"]["fillIn"][2]))
         painter.setPen(pen)
@@ -242,14 +244,12 @@ class QWidget_(QWidget):
         
         #폭탄 그리기
         if len(DB["boomb"]) != 0:
-            painter.setPen(QColor(DB["boombInfo"]["lineColor"][0], DB["boombInfo"]["lineColor"][1], DB["boombInfo"]["lineColor"][2]))
             painter.setBrush(QColor(DB["boombInfo"]["fillIn"][0], DB["boombInfo"]["fillIn"][1], DB["boombInfo"]["fillIn"][2]))
             #painter.setWidth(DB["boombInfo"]["lineColor"][3])
             painter.drawRect(DB["boomb"][0][0] - self.pos().x(), DB["boomb"][0][1] - self.pos().y(), 20, 30)
         
         #총알 그리기
         for i in DB["bullet"]:
-            pen = QPen(QColor(i["lineColor"][0],i["lineColor"][1],i["lineColor"][2]))
             pen.setWidth(i["lineColor"][3])
             painter.setPen(pen)
 
@@ -283,9 +283,10 @@ class GameOver(QWidget_):
 
         text = random.choice(rage_against_the_machine)
         
-        self.label.setStyleSheet("color: rgb(114, 9, 183);")
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+
         self.extra_label = QLabel(text, self)
-        self.extra_label.setStyleSheet("color: rgb(114, 9, 183);")
+        self.extra_label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.label)
@@ -315,6 +316,46 @@ class GameOver(QWidget_):
         self.move(int(x), int(y))   
 
 
+class Win(QWidget_):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setGeometry(-900, 500, 600, 300)
+        self.label = QLabel("YOU WIN", self)
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+
+        self.extra_label = QLabel("Your Anger is a gift", self)
+        self.extra_label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.label)
+        layout.addWidget(self.extra_label)
+        self.setLayout(layout)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.extra_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.label)
+        
+        self.show()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tictaktoc)
+        self.timer.start(1000)  # 1초마다 업데이트
+
+    def tictaktoc(self):
+        if DB["coperation_hit"] >= 5:
+            self.moveCenter()
+            
+    def moveCenter(self):
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width() - self.width()) // 2
+        y = (screen.height() - self.height()) // 2
+        self.move(x, y)
+        
+    def endGame(self):
+        pass
+
+
 
 class Player(QWidget_):
     def __init__(self):
@@ -330,7 +371,8 @@ class Player(QWidget_):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tikTacTok)
         self.timer.start(timeSpeed)
-        self.label.setStyleSheet("color: rgb(114, 9, 183);")
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+
 
 
     def tikTacTok(self):
@@ -387,11 +429,12 @@ class Floor(QWidget_):
 
     def initUI(self):
         self.setWindowTitle('floor')
-        self.setGeometry(self.floor["location"][0]-50, self.floor["location"][1]-50, self.floor["size"][0]+100, 200)  # 창 위치와 크기 설정
+        self.setGeometry(self.floor["location"][0]-50, self.floor["location"][1]-50, self.floor["size"][0]+100, 200)
         self.show()
 
 
     def tikTacTok(self):
+        self.setGeometry(self.floor["location"][0]-50, self.floor["location"][1]-50, self.floor["size"][0]+100, 200)
         temp = self.temp0
         if DB["player"]["location"][1] >self.floor["location"][1] - 2*DB["player"]["size"]:
             self.temp0 = False
@@ -418,6 +461,26 @@ class Floor(QWidget_):
         if x >= self.floor["location"][0] and x<= self.floor["location"][0]+self.floor["size"][0] and y>= self.floor["location"][1] - 2*DB["player"]["size"]:
             return True
         return False
+    
+    @staticmethod
+    def floor_move():
+        while True:
+            time.sleep(10)
+            random_numbers = random.sample(range(10), 4)
+            for i in random_numbers:  
+                DB["floor"][i]["location"] = [10000, 10000]
+            time.sleep(1)
+            for i in random_numbers:
+                new_location = [
+                    random.randint(1, 12) * 100,
+                    random.randint(6, 13) * 100
+                ]
+                DB["floor"][i]["location"] = new_location
+                
+    @staticmethod       
+    def floor_thread_start():
+        floor_thread = threading.Thread(target = Floor.floor_move)
+        floor_thread.start()
     
 class Boss(QWidget_):
     def __init__(self):
@@ -585,8 +648,9 @@ class Boomb(QWidget_):
         self.setGeometry(100,100,100,100)
         layout = QVBoxLayout()
         self.label = QLabel(self)
-        self.label.setStyleSheet("background-color: red;")
-        self.label.setText("BOOM!")
+        self.label.setStyleSheet("background-color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+        text = str(DB["coperation_hit"]) + "/3 coperation is BROKEN!"
+        self.label.setText(text)
         layout.addWidget(self.label)
 
         self.setLayout(layout)
@@ -594,6 +658,8 @@ class Boomb(QWidget_):
         self.timer.timeout.connect(self.boombOner)
         self.timer.start(timeSpeed)
         
+        
+
     def boombOner(self):
         
         if not self.boombOn:
@@ -625,7 +691,7 @@ class Boomb(QWidget_):
                 
                 
             if self.inBox((DB["player"]["location"][0] + DB["player"]["size"], DB["player"]["location"][1] + DB["player"]["size"]), (self.pos().x(), self.pos().y()), (350, 300)):
-                self.hitCompute()
+                pass
 
     def inBox(self, point, loc, size):
         x, y = point
@@ -635,6 +701,11 @@ class Boomb(QWidget_):
         return False
     
     def explode(self):
+        if not self.explodeFlag:
+            DB["coperation_hit"] = DB["coperation_hit"] + 1
+            text = str(DB["coperation_hit"]) + "/5 coperation is BROKEN!"
+            self.label.setText(text)
+            
         self.now = time.time()
         self.explodeFlag = True
         self.show()
@@ -689,8 +760,10 @@ def on_key_release(key):
 
 
 if __name__ == '__main__':
+    win = Win()
     end = GameOver()
     floors = [Floor(floor_data) for floor_data in DB["floor"]]
+    Floor.floor_thread_start()
     boss = Boss()
     boss.start_move_thread()
     player = Player()
