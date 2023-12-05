@@ -22,7 +22,7 @@ onD = False
 
 
 DB = {
-    "coperation_hit": 4,
+    "coperation_hit": 0,
     "floor_time": [15, 10, 7, 5, 1, 1],
     "bullet_size": [10, 22, 34, 46, 60, 60],
     "line_color": [114 ,9, 183],
