@@ -8,16 +8,6 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor
 import math
 import threading
-import pyglet
-
-def play_sound(file_path):
-    sound = pyglet.media.load(file_path, streaming=False)
-    
-    def on_eos(dt):
-        pyglet.app.exit()
-
-    sound.on_eos = on_eos
-    sound.play()
 
 random.seed()
 timeSpeed = 1
@@ -32,8 +22,9 @@ onD = False
 
 
 DB = {
-    "coperation_hit": 0,
-    
+    "coperation_hit": 4,
+    "floor_time": [15, 10, 7, 5, 1, 1],
+    "bullet_size": [10, 22, 34, 46, 60, 60],
     "line_color": [114 ,9, 183],
     
     "player": {
@@ -80,7 +71,7 @@ DB = {
         },
         
         {
-            "location": [300,750],
+            "location": [350,750],
             "size": [700,0],
             "lineColor": [114 ,9, 183, 10],
         },
@@ -163,9 +154,10 @@ class Bullet:
     def add_bullet(self, address):
         speed = 2
         DB["bullet"] = []
+        bullet_size = DB["bullet_size"][DB["coperation_hit"]]
         
         bullet_obj = {
-            "size": [10, 10],
+            "size": [bullet_size, bullet_size],
             "lineColor": [114 ,9, 183, 4],
             "location": address,
             }
@@ -502,21 +494,16 @@ class Floor(QWidget_):
     @staticmethod
     def floor_move():
         while True:
-            time.sleep(10)
-            #TODO)
-            sound_file = ".\heyPaPaLiPa.wav"
-
-            # 효과음 재생 (비동기적으로)
-            play_sound(sound_file)
-            print("발판 삭제")
+            floor_time = DB["floor_time"][DB["coperation_hit"]]
+            time.sleep(floor_time)
             random_numbers = random.sample(range(10), 4)
             for i in random_numbers:  
-                DB["floor"][i]["location"] = [10000, 10000]
+                DB["floor"][i]["location"] = [-6000, 1]
             time.sleep(1)
             for i in random_numbers:
                 new_location = [
-                    random.randint(1, 12) * 100,
-                    random.randint(6, 13) * 100
+                    random.randint(6, 30) * 50 + 50,
+                    random.randint(3, 8) * 150
                 ]
                 DB["floor"][i]["location"] = new_location
                 
@@ -611,8 +598,6 @@ class Boss(QWidget_):
                 self.temp = DB["laser"]["location"]
             DB["laser"]["location"] = [0,0,0,0]
         elif self.now < 7: #쏘기
-            #TODO)
-            print("보스 레이저")
             self.laserOn = False
             if self.checkPosition(self.temp, DB["player"]["location"]) != 1:
                 self.temp[2], self.temp[3] = self.circular(self.temp, 0.025)
@@ -638,8 +623,7 @@ class Boss(QWidget_):
         if now - lastHit >1:
             lastHit = now
             DB["player"]["heart"]-=1
-            #TODO) 플레이어 피격
-            print("플레이어 피격")
+            
             
             
     def attack2(self):
@@ -664,12 +648,8 @@ class Boss(QWidget_):
             if self.now > 7:
                 
                 if random.choice([True, False]):
-                    #TODO)
-                    print("보스 이동")
                     self.attack2()
                 else:
-                    #TODO)
-                    print("보스 총알")
                     self.bul.add_bullet([x + DB["boss"]["size"] for x in DB["boss"]["location"]])
 
             
@@ -730,6 +710,7 @@ class Boomb(QWidget_):
         DB["boomb"] = [loc]
         
     def tikTacTok(self):
+        self.label.setStyleSheet("background-color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
         if self.inBox((DB["player"]["location"][0], DB["player"]["location"][1]), DB["boomb"][0], DB["boombInfo"]["size"]):
             self.explode()
             
@@ -753,8 +734,6 @@ class Boomb(QWidget_):
     
     def explode(self):
         if not self.explodeFlag:
-            #TODO)
-            print("코퍼레이션 파괴")
             DB["coperation_hit"] = DB["coperation_hit"] + 1
             text = str(DB["coperation_hit"]) + "/5 coperation is BROKEN!"
             self.label.setText(text)
