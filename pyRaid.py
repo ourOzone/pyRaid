@@ -8,6 +8,16 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPainter, QBrush, QPen, QColor
 import math
 import threading
+import pyglet
+
+def play_sound(file_path):
+    sound = pyglet.media.load(file_path, streaming=False)
+    
+    def on_eos(dt):
+        pyglet.app.exit()
+
+    sound.on_eos = on_eos
+    sound.play()
 
 random.seed()
 timeSpeed = 1
@@ -302,6 +312,8 @@ class GameOver(QWidget_):
         self.timer.start(1000)  # 1초마다 업데이트
 
     def tictaktoc(self):
+        self.extra_label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
         if DB["player"]["heart"] > 0:
             self.setGeometry(-1100,-1100,600,300)
         else:
@@ -343,6 +355,8 @@ class Win(QWidget_):
         self.timer.start(1000)  # 1초마다 업데이트
 
     def tictaktoc(self):
+        self.extra_label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
         if DB["coperation_hit"] >= 5:
             self.moveCenter()
             
@@ -355,6 +369,28 @@ class Win(QWidget_):
     def endGame(self):
         pass
 
+class Level(QWidget_):
+    def __init__(self):
+        super().__init__()
+        self.setGeometry(-900, 500, 600, 300)
+        self.initUI()
+
+    def initUI(self):
+        self.color_list = [
+            [114, 9, 183],
+            [148, 70, 200],
+            [183, 132, 218],
+            [218, 194, 236],
+            [255, 255, 255],
+            [255, 255, 255]
+            ]
+        self.show()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tictaktoc)
+        self.timer.start(100)
+
+    def tictaktoc(self):
+        DB["line_color"] = self.color_list[DB["coperation_hit"]]
 
 
 class Player(QWidget_):
@@ -377,7 +413,8 @@ class Player(QWidget_):
 
     def tikTacTok(self):
         heart = str(DB['player']['heart'])
-        self.label.setText( "남은 목숨: "+heart)
+        self.label.setStyleSheet("color: rgb({}, {}, {});".format(DB["line_color"][0], DB["line_color"][1], DB["line_color"][2]))
+        self.label.setText( "Over Drive: "+heart)
         #중력
         ground = DB["ground"][0][1]
         if DB["player"]["onGround"] == False:
@@ -466,6 +503,12 @@ class Floor(QWidget_):
     def floor_move():
         while True:
             time.sleep(10)
+            #TODO)
+            sound_file = ".\heyPaPaLiPa.wav"
+
+            # 효과음 재생 (비동기적으로)
+            play_sound(sound_file)
+            print("발판 삭제")
             random_numbers = random.sample(range(10), 4)
             for i in random_numbers:  
                 DB["floor"][i]["location"] = [10000, 10000]
@@ -568,6 +611,8 @@ class Boss(QWidget_):
                 self.temp = DB["laser"]["location"]
             DB["laser"]["location"] = [0,0,0,0]
         elif self.now < 7: #쏘기
+            #TODO)
+            print("보스 레이저")
             self.laserOn = False
             if self.checkPosition(self.temp, DB["player"]["location"]) != 1:
                 self.temp[2], self.temp[3] = self.circular(self.temp, 0.025)
@@ -593,6 +638,8 @@ class Boss(QWidget_):
         if now - lastHit >1:
             lastHit = now
             DB["player"]["heart"]-=1
+            #TODO) 플레이어 피격
+            print("플레이어 피격")
             
             
     def attack2(self):
@@ -617,8 +664,12 @@ class Boss(QWidget_):
             if self.now > 7:
                 
                 if random.choice([True, False]):
+                    #TODO)
+                    print("보스 이동")
                     self.attack2()
                 else:
+                    #TODO)
+                    print("보스 총알")
                     self.bul.add_bullet([x + DB["boss"]["size"] for x in DB["boss"]["location"]])
 
             
@@ -702,6 +753,8 @@ class Boomb(QWidget_):
     
     def explode(self):
         if not self.explodeFlag:
+            #TODO)
+            print("코퍼레이션 파괴")
             DB["coperation_hit"] = DB["coperation_hit"] + 1
             text = str(DB["coperation_hit"]) + "/5 coperation is BROKEN!"
             self.label.setText(text)
@@ -760,6 +813,7 @@ def on_key_release(key):
 
 
 if __name__ == '__main__':
+    level = Level()
     win = Win()
     end = GameOver()
     floors = [Floor(floor_data) for floor_data in DB["floor"]]
