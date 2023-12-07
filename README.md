@@ -4,7 +4,7 @@
 
 ## 백문이 불여일견
 
-https://youtu.be/LVGm19sxB-I
+<iframe width="1280" height="720" src="https://www.youtube.com/embed/LVGm19sxB-I" title="OSS term project “py-raid” 22101153 고민재" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ## 서두
 
@@ -48,9 +48,6 @@ pyRaid.py 파일을 실행하면 됩니다.
 
 중력이 작용하는 2D 화면의 게임에서 창밖에 존재하는 보스의 공격을 피하며 살아남는 것이 이 게임의 목적입니다.
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/81ead61d-30e8-43f6-ab96-da6aebae026a/c2333fc8-c8b3-4858-a244-e2018611cb76/Untitled.png)
-
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/81ead61d-30e8-43f6-ab96-da6aebae026a/0f73eb6a-1ebe-4b8f-a190-6cdcf7c3fa23/Untitled.png)
 
 ## PyQt5
 
