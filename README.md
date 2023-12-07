@@ -4,7 +4,7 @@
 
 ## 백문이 불여일견
 
-<iframe width="1280" height="720" src="https://www.youtube.com/embed/LVGm19sxB-I" title="OSS term project “py-raid” 22101153 고민재" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+https://youtu.be/LVGm19sxB-I
 
 ## 서두
 
@@ -48,6 +48,9 @@ pyRaid.py 파일을 실행하면 됩니다.
 
 중력이 작용하는 2D 화면의 게임에서 창밖에 존재하는 보스의 공격을 피하며 살아남는 것이 이 게임의 목적입니다.
 
+![Untitled](https://img.itch.zone/aW1nLzEzNjAwNTE2LnBuZw==/original/bjfxV3.png)
+
+![Untitled](https://static.wikia.nocookie.net/terraria_gamepedia/images/9/90/6yrsparty.png/revision/latest?cb=20170516220438)
 
 ## PyQt5
 
