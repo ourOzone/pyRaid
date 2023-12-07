@@ -33,7 +33,7 @@ DB = {
         "lineColor": [114 ,9, 183, 4],
         "fillIn": [0, 0, 0],
         "speed": 0.7,
-        "gravity": [0, 9.8 * miliTime],
+        "gravity": [0, 30* miliTime],
         "onGround": False,
         "heart": 3
     },
@@ -104,7 +104,7 @@ DB = {
     
     
     "ground": [
-        [0, int(desktop.height() / 1.3) + 70]
+        [0, 1350]
     ],
     
     "boss": {
@@ -773,7 +773,7 @@ def on_key_press(key):
             if DB["player"]["onGround"] == True:
                 DB["player"]["location"][1]-=1
                 DB["player"]["onGround"] = False
-                DB["player"]["gravity"][0] = -2
+                DB["player"]["gravity"][0] = -4
 
     except AttributeError:
         pass
